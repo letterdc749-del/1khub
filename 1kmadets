@@ -23,7 +23,7 @@ local VIM              = game:GetService("VirtualInputManager")
 local LP               = Players.LocalPlayer
 local Cam              = workspace.CurrentCamera
 
-if game.PlaceId ~= 15124180230 and game.PlaceId ~= 13643807539 then
+if game.PlaceId ~= 14413475235 and game.PlaceId ~= 13643807539 then
     LP:Kick("South Bronx only"); return
 end
 
