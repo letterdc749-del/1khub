@@ -1,0 +1,1515 @@
+--[[
+  ╔══════════════════════════════════════════╗
+  ║        1K  HUB  EDITION  PC          ║
+  ║        South Bronx Trenches             ║
+  ║                                         ║
+  ║  RightShift = Toggle                    ║
+  ║  Q (hold)   = Aimlock                   ║
+  ║  V          = Noclip                    ║
+  ║  F          = Fly                       ║
+  ║  C          = Freecam                   ║
+  ╚══════════════════════════════════════════╝
+]]
+
+local Players          = game:GetService("Players")
+local RunService       = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService     = game:GetService("TweenService")
+local Lighting         = game:GetService("Lighting")
+local TeleportService  = game:GetService("TeleportService")
+local StarterGui       = game:GetService("StarterGui")
+local TextChatService  = game:GetService("TextChatService")
+local VIM              = game:GetService("VirtualInputManager")
+local LP               = Players.LocalPlayer
+local Cam              = workspace.CurrentCamera
+
+if game.PlaceId ~= 15124180230 and game.PlaceId ~= 13643807539 then
+    LP:Kick("South Bronx only"); return
+end
+
+-- ── KEY SYSTEM ──────────────────────────────────────────────
+-- Key stored as bytes so it's not plaintext readable in source
+local _k = {49,107,109,97,100,101,116,115}
+local VALID_KEY = string.char(table.unpack(_k)); _k = nil
+local keyVerified = false
+
+local keySG = Instance.new("ScreenGui")
+keySG.Name = "1kKeySystem"; keySG.ResetOnSpawn = false
+keySG.ZIndexBehavior = Enum.ZIndexBehavior.Global
+keySG.IgnoreGuiInset = true; keySG.DisplayOrder = 99999
+keySG.Parent = LP:WaitForChild("PlayerGui")
+pcall(function() syn.protect_gui(keySG) end)
+pcall(function() protect_gui(keySG) end)
+
+local keyBG = Instance.new("Frame", keySG)
+keyBG.Size = UDim2.new(1,0,1,0); keyBG.BackgroundColor3 = Color3.fromRGB(18,18,20)
+keyBG.BackgroundTransparency = 0; keyBG.BorderSizePixel = 0
+
+local keyCard = Instance.new("Frame", keyBG)
+keyCard.Size = UDim2.new(0,300,0,160); keyCard.AnchorPoint = Vector2.new(0.5,0.5)
+keyCard.Position = UDim2.new(0.5,0,0.5,0); keyCard.BackgroundColor3 = Color3.fromRGB(24,24,26)
+keyCard.BorderSizePixel = 1; keyCard.BorderColor3 = Color3.fromRGB(60,60,65)
+
+-- Red top bar
+local keyBar = Instance.new("Frame", keyCard); keyBar.Size = UDim2.new(1,0,0,2)
+keyBar.BackgroundColor3 = Color3.fromRGB(190,30,30); keyBar.BorderSizePixel = 0
+
+-- Title
+local keyTitle = Instance.new("TextLabel", keyCard); keyTitle.Text = "1k hub"
+keyTitle.Font = Enum.Font.Code; keyTitle.TextSize = 14; keyTitle.TextColor3 = Color3.new(1,1,1)
+keyTitle.BackgroundTransparency = 1; keyTitle.Size = UDim2.new(1,0,0,22); keyTitle.Position = UDim2.new(0,0,0,10)
+keyTitle.TextXAlignment = Enum.TextXAlignment.Center
+
+local keySub = Instance.new("TextLabel", keyCard); keySub.Text = "enter key to continue"
+keySub.Font = Enum.Font.Code; keySub.TextSize = 10; keySub.TextColor3 = Color3.fromRGB(100,100,110)
+keySub.BackgroundTransparency = 1; keySub.Size = UDim2.new(1,0,0,14); keySub.Position = UDim2.new(0,0,0,34)
+keySub.TextXAlignment = Enum.TextXAlignment.Center
+
+-- Input box
+local keyInputBG = Instance.new("Frame", keyCard); keyInputBG.Size = UDim2.new(1,-20,0,26)
+keyInputBG.Position = UDim2.new(0,10,0,56); keyInputBG.BackgroundColor3 = Color3.fromRGB(16,16,18)
+keyInputBG.BorderSizePixel = 1; keyInputBG.BorderColor3 = Color3.fromRGB(55,55,60)
+
+local keyBox = Instance.new("TextBox", keyInputBG); keyBox.Text = ""
+keyBox.PlaceholderText = "paste key here..."; keyBox.Font = Enum.Font.Code; keyBox.TextSize = 11
+keyBox.TextColor3 = Color3.new(1,1,1); keyBox.PlaceholderColor3 = Color3.fromRGB(80,80,90)
+keyBox.BackgroundTransparency = 1; keyBox.Size = UDim2.new(1,-10,1,0); keyBox.Position = UDim2.new(0,5,0,0)
+keyBox.TextXAlignment = Enum.TextXAlignment.Left; keyBox.ClearTextOnFocus = false
+
+keyBox.Focused:Connect(function() keyInputBG.BorderColor3 = Color3.fromRGB(190,30,30) end)
+keyBox.FocusLost:Connect(function() keyInputBG.BorderColor3 = Color3.fromRGB(55,55,60) end)
+
+-- Status label
+local keyStatus = Instance.new("TextLabel", keyCard); keyStatus.Text = ""
+keyStatus.Font = Enum.Font.Code; keyStatus.TextSize = 10; keyStatus.TextColor3 = Color3.fromRGB(190,30,30)
+keyStatus.BackgroundTransparency = 1; keyStatus.Size = UDim2.new(1,0,0,13); keyStatus.Position = UDim2.new(0,0,0,88)
+keyStatus.TextXAlignment = Enum.TextXAlignment.Center
+
+-- Submit button
+local keyBtn = Instance.new("TextButton", keyCard); keyBtn.Text = "verify"
+keyBtn.Font = Enum.Font.Code; keyBtn.TextSize = 12; keyBtn.TextColor3 = Color3.new(1,1,1)
+keyBtn.BackgroundColor3 = Color3.fromRGB(190,30,30); keyBtn.Size = UDim2.new(1,-20,0,26)
+keyBtn.Position = UDim2.new(0,10,0,106); keyBtn.BorderSizePixel = 0; keyBtn.AutoButtonColor = true
+
+local function verifyKey()
+    local entered = keyBox.Text:gsub("%s","")
+    if entered == VALID_KEY then
+        keyVerified = true
+        keyStatus.Text = "key accepted"; keyStatus.TextColor3 = Color3.fromRGB(80,220,100)
+        task.wait(0.2); keySG:Destroy()
+    else
+        keyStatus.Text = "wrong key"; keyStatus.TextColor3 = Color3.fromRGB(220,60,60)
+        local orig = keyCard.Position
+        keyCard.Position = UDim2.new(0.5,-8,0.5,0); task.wait(0.04)
+        keyCard.Position = UDim2.new(0.5,8,0.5,0); task.wait(0.04)
+        keyCard.Position = UDim2.new(0.5,-4,0.5,0); task.wait(0.04)
+        keyCard.Position = orig
+    end
+end
+
+keyBtn.MouseButton1Click:Connect(verifyKey)
+keyBox.FocusLost:Connect(function(enter) if enter then verifyKey() end end)
+
+-- Block until verified
+repeat task.wait(0.1) until keyVerified
+
+-- ── COLORS ─────────────────────────────────────────────────
+local ACC    = Color3.fromRGB(190,30,30)
+local BASE   = Color3.fromRGB(20,20,22)
+local SURF   = Color3.fromRGB(14,14,16)
+local CARD   = Color3.fromRGB(26,26,28)
+local CARDHV = Color3.fromRGB(32,32,34)
+local CARDON = Color3.fromRGB(30,16,16)
+local BDR    = Color3.fromRGB(45,45,48)
+local BDRON  = Color3.fromRGB(70,30,30)
+local TXT    = Color3.fromRGB(210,210,215)
+local SUB    = Color3.fromRGB(90,90,100)
+local GRN    = Color3.fromRGB(60,200,100)
+local YEL    = Color3.fromRGB(220,180,50)
+local WHT    = Color3.fromRGB(255,255,255)
+local BLK    = Color3.fromRGB(0,0,0)
+local CYAN   = Color3.fromRGB(80,200,240)
+
+-- ── STATE ──────────────────────────────────────────────────
+local S = {
+    Aimlock   = {Enabled=false,Smooth=0.15,FOV=160},
+    SilentAim = {Enabled=false},
+    AntiAim   = {Enabled=false,Conn=nil},
+    Noclip    = {Enabled=false},
+    Fly       = {Enabled=false,Speed=60,Body=nil,Gyro=nil},
+    FreeCam   = {Enabled=false,Speed=60},
+    Movement  = {Speed=16},
+    Gravity   = {Value=196.2},
+    ESP       = {Enabled=false,Tags={},Highlights={},HPConns={}},
+    Tracers   = {Enabled=false,Lines={}},
+    Crosshair = {Enabled=false,Style="Dot"},
+    Fullbright= {Enabled=false},
+    Fog       = {Removed=false},
+    InfiniteStamina={Enabled=false},
+    InstantInteract={Enabled=false},
+    AutoRespawn={Enabled=false},
+    DeathSpawn={BankEnabled=false,BarberEnabled=false,GunEnabled=false,
+                DealerEnabled=false,BlackMarketEnabled=false,MarshmellowEnabled=false,
+                Enabled=false,LastPos=nil,QuickPos=nil,QuickName=nil},
+    NameChanger={Enabled=false,Custom="1k user",Orig=nil},
+    AFKBypass={Enabled=false,Thread=nil},
+    NearAlert={Enabled=false,Radius=20,LastAlert=0},
+    GUI={Visible=true,ToggleKey=Enum.KeyCode.RightShift,Dragging=false,DragOff=Vector2.new(),Tab="Combat"},
+    ActiveSlider=nil,
+    Listening=false,
+    -- Autofarm
+    Farm={Enabled=false,Looping=false,Thread=nil,WatchThread=nil},
+}
+
+local Connections = {}
+local function conn(sig,fn) local c=sig:Connect(fn); table.insert(Connections,c); return c end
+
+-- ── GUI PARENT ──────────────────────────────────────────────
+local _hui = LP:WaitForChild("PlayerGui")
+pcall(function() local h=gethui(); if h then _hui=h end end)
+pcall(function()
+    for _,n in ipairs({"1kHub"}) do
+        local a=game:GetService("CoreGui"):FindFirstChild(n); if a then a:Destroy() end
+        local b=LP:WaitForChild("PlayerGui"):FindFirstChild(n); if b then b:Destroy() end
+    end
+end)
+
+local SG = Instance.new("ScreenGui")
+SG.Name="1kHub"; SG.ResetOnSpawn=false
+SG.ZIndexBehavior=Enum.ZIndexBehavior.Global
+SG.IgnoreGuiInset=true; SG.DisplayOrder=9999; SG.Parent=_hui
+_G.HUB_SG=SG
+pcall(function() syn.protect_gui(SG) end)
+pcall(function() protect_gui(SG) end)
+
+local DrawSG = Instance.new("ScreenGui")
+DrawSG.Name="1kDraw"; DrawSG.ResetOnSpawn=false
+DrawSG.IgnoreGuiInset=true; DrawSG.DisplayOrder=99998
+DrawSG.ZIndexBehavior=Enum.ZIndexBehavior.Global; DrawSG.Parent=_hui
+pcall(function() syn.protect_gui(DrawSG) end)
+pcall(function() protect_gui(DrawSG) end)
+
+local CHFrame=Instance.new("Frame",DrawSG); CHFrame.Size=UDim2.new(1,0,1,0); CHFrame.BackgroundTransparency=1; CHFrame.Active=false
+local AimFrame=Instance.new("Frame",DrawSG); AimFrame.Size=UDim2.new(1,0,1,0); AimFrame.BackgroundTransparency=1; AimFrame.Active=false
+local TracerFrame=Instance.new("Frame",DrawSG); TracerFrame.Size=UDim2.new(1,0,1,0); TracerFrame.BackgroundTransparency=1; TracerFrame.Active=false
+
+-- ── DEATH SCREEN (skidded from Spoof Hub) ───────────────────
+local _dOverlay,_dScanConn,_dCountConn=nil,nil,nil
+local function showDeathScreen(secs,locName,dispName)
+    if _dOverlay then pcall(function() _dOverlay:Destroy() end); _dOverlay=nil end
+    if _dScanConn then _dScanConn:Disconnect(); _dScanConn=nil end
+    if _dCountConn then _dCountConn:Disconnect(); _dCountConn=nil end
+    task.spawn(function()
+        local sg=_G.HUB_SG; if not sg then return end
+        local ov=Instance.new("Frame",sg); ov.Name="DeathScreen"
+        ov.Size=UDim2.new(1,0,1,0); ov.BackgroundColor3=BLK; ov.BackgroundTransparency=1; ov.BorderSizePixel=0; ov.ZIndex=999
+        _dOverlay=ov
+        local scan=Instance.new("Frame",ov); scan.Size=UDim2.new(1,0,0,2); scan.BackgroundColor3=Color3.fromRGB(180,0,0); scan.BorderSizePixel=0; scan.ZIndex=1000; scan.BackgroundTransparency=0.4
+        local title=Instance.new("TextLabel",ov); title.Text="1K  HUB"
+        title.Font=Enum.Font.GothamBold; title.TextSize=64; title.TextColor3=ACC
+        title.BackgroundTransparency=1; title.Size=UDim2.new(1,0,0,80); title.Position=UDim2.new(0,0,0.22,0)
+        title.TextXAlignment=Enum.TextXAlignment.Center; title.ZIndex=1000
+        title.TextStrokeTransparency=0.3; title.TextStrokeColor3=BLK
+        local sub=Instance.new("TextLabel",ov); sub.Text="T E L E P O R T I N G   Y O U"
+        sub.Font=Enum.Font.GothamBold; sub.TextSize=16; sub.TextColor3=Color3.fromRGB(220,220,220)
+        sub.BackgroundTransparency=1; sub.Size=UDim2.new(1,0,0,22); sub.Position=UDim2.new(0,0,0.22,88)
+        sub.TextXAlignment=Enum.TextXAlignment.Center; sub.ZIndex=1000
+        local nameLbl=Instance.new("TextLabel",ov); nameLbl.Text=dispName or LP.DisplayName
+        nameLbl.Font=Enum.Font.GothamBold; nameLbl.TextSize=20; nameLbl.TextColor3=WHT
+        nameLbl.BackgroundTransparency=1; nameLbl.Size=UDim2.new(1,0,0,26); nameLbl.Position=UDim2.new(0,0,0.22,128)
+        nameLbl.TextXAlignment=Enum.TextXAlignment.Center; nameLbl.ZIndex=1000
+        local destLbl=Instance.new("TextLabel",ov); destLbl.Text="→ "..locName
+        destLbl.Font=Enum.Font.GothamBold; destLbl.TextSize=14; destLbl.TextColor3=ACC
+        destLbl.BackgroundTransparency=1; destLbl.Size=UDim2.new(1,0,0,20); destLbl.Position=UDim2.new(0,0,0.22,158)
+        destLbl.TextXAlignment=Enum.TextXAlignment.Center; destLbl.ZIndex=1000
+        local countLbl=Instance.new("TextLabel",ov); countLbl.Text=tostring(math.ceil(secs))
+        countLbl.Font=Enum.Font.GothamBold; countLbl.TextSize=56; countLbl.TextColor3=WHT
+        countLbl.BackgroundTransparency=1; countLbl.Size=UDim2.new(1,0,0,64); countLbl.Position=UDim2.new(0,0,0.22,182)
+        countLbl.TextXAlignment=Enum.TextXAlignment.Center; countLbl.ZIndex=1000
+        local barTrack=Instance.new("Frame",ov); barTrack.Size=UDim2.new(0,300,0,3)
+        barTrack.AnchorPoint=Vector2.new(0.5,0); barTrack.Position=UDim2.new(0.5,0,0.22,256)
+        barTrack.BackgroundColor3=Color3.fromRGB(35,35,35); barTrack.BorderSizePixel=0; barTrack.ZIndex=1000
+        local barFill=Instance.new("Frame",barTrack); barFill.Size=UDim2.new(1,0,1,0); barFill.BackgroundColor3=ACC; barFill.BorderSizePixel=0; barFill.ZIndex=1001
+        ov.BackgroundTransparency=0
+        local scanY=0
+        _dScanConn=RunService.RenderStepped:Connect(function(dt)
+            if not ov.Parent then return end
+            scanY=(scanY+dt*180)%math.max(ov.AbsoluteSize.Y,1)
+            scan.Position=UDim2.new(0,0,0,scanY)
+        end)
+        local remaining=secs
+        _dCountConn=RunService.Heartbeat:Connect(function(dt)
+            if not ov.Parent then
+                if _dScanConn then _dScanConn:Disconnect(); _dScanConn=nil end
+                if _dCountConn then _dCountConn:Disconnect(); _dCountConn=nil end; return
+            end
+            remaining=math.max(0,remaining-dt)
+            countLbl.Text=tostring(math.ceil(remaining))
+            barFill.Size=UDim2.new(math.max(remaining/secs,0),0,1,0)
+            if remaining<=0 then
+                if _dScanConn then _dScanConn:Disconnect(); _dScanConn=nil end
+                if _dCountConn then _dCountConn:Disconnect(); _dCountConn=nil end
+                ov.Visible=false; pcall(function() ov:Destroy() end); _dOverlay=nil
+            end
+        end)
+    end)
+end
+
+local function hideDeathScreen()
+    if _dScanConn then _dScanConn:Disconnect(); _dScanConn=nil end
+    if _dCountConn then _dCountConn:Disconnect(); _dCountConn=nil end
+    if _dOverlay then pcall(function() _dOverlay:Destroy() end); _dOverlay=nil end
+end
+
+-- ── SMOOTH TELEPORT (from Spoof Hub) ────────────────────────
+local function smoothTeleport(targetPos)
+    local char=LP.Character; if not char then return end
+    local root=char:FindFirstChild("HumanoidRootPart"); local hum=char:FindFirstChildOfClass("Humanoid")
+    if not root or not hum then return end
+    task.spawn(function()
+        local origCollide={}
+        for _,p in ipairs(char:GetDescendants()) do
+            if p:IsA("BasePart") then origCollide[p]=p.CanCollide; p.CanCollide=false end
+        end
+        hum:ChangeState(Enum.HumanoidStateType.Physics)
+        local endTime=tick()+2.0; local c
+        c=RunService.Heartbeat:Connect(function()
+            if not root.Parent then c:Disconnect(); return end
+            root.CFrame=CFrame.new(targetPos); root.AssemblyLinearVelocity=Vector3.zero; root.AssemblyAngularVelocity=Vector3.zero
+            if tick()>=endTime then c:Disconnect() end
+        end)
+        task.wait(2.1)
+        pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+        for p,v in pairs(origCollide) do if p and p.Parent then p.CanCollide=v end end
+    end)
+end
+
+-- ── SLOW TRAVEL (from Spoof Hub) ────────────────────────────
+local SlowTravel={Active=false,Target=nil,Name="",Speed=20,Conn=nil}
+local function stopSlowTravel()
+    if SlowTravel.Conn then SlowTravel.Conn:Disconnect(); SlowTravel.Conn=nil end
+    SlowTravel.Active=false; SlowTravel.Target=nil; SlowTravel.Name=""
+end
+
+local function startSlowTravel(targetPos,locName)
+    stopSlowTravel(); SlowTravel.Active=true; SlowTravel.Target=targetPos; SlowTravel.Name=locName
+    local UY=-3
+    local function disCol() local c=LP.Character; if not c then return end; local root=c:FindFirstChild("HumanoidRootPart"); if root then root.CanCollide=false end end
+    local phase=1
+    SlowTravel.Conn=RunService.Heartbeat:Connect(function(dt)
+        if not SlowTravel.Active then return end
+        local char=LP.Character; local root=char and char:FindFirstChild("HumanoidRootPart")
+        if not root then stopSlowTravel(); return end
+        disCol(); root.AssemblyLinearVelocity=Vector3.zero; root.AssemblyAngularVelocity=Vector3.zero
+        local pos=root.Position
+        if phase==1 then
+            if math.abs(pos.Y-UY)<5 then root.CFrame=CFrame.new(Vector3.new(pos.X,UY,pos.Z)); phase=2; return end
+            root.CFrame=CFrame.new(pos+Vector3.new(0,-math.min(SlowTravel.Speed*dt,math.abs(pos.Y-UY)),0))
+        elseif phase==2 then
+            local under=Vector3.new(targetPos.X,UY,targetPos.Z); local diff=under-pos; local hd=Vector3.new(diff.X,0,diff.Z).Magnitude
+            if hd<5 then root.CFrame=CFrame.new(under); phase=3; return end
+            root.CFrame=CFrame.new(pos+Vector3.new(diff.X,0,diff.Z).Unit*math.min(SlowTravel.Speed*dt,hd))
+        elseif phase==3 then
+            local diff=targetPos-pos
+            if diff.Magnitude<4 then root.CFrame=CFrame.new(targetPos); local n=SlowTravel.Name; stopSlowTravel(); notify("Arrived","✓ "..n,"success"); return end
+            root.CFrame=CFrame.new(pos+Vector3.new(0,math.min(SlowTravel.Speed*dt,math.abs(diff.Y)),0))
+        end
+    end)
+end
+
+-- ── QUICK TELEPORT (die → respawn at location) ───────────────
+local function quickTeleport(targetPos,locName)
+    local char=LP.Character; if not char then return end
+    S.DeathSpawn.QuickPos=targetPos; S.DeathSpawn.QuickName=locName
+    showDeathScreen(20,locName,S.NameChanger.Enabled and S.NameChanger.Custom or LP.DisplayName)
+    task.spawn(function()
+        local hum=char:FindFirstChildOfClass("Humanoid")
+        pcall(function() char:BreakJoints() end); task.wait(0.1)
+        if hum then pcall(function() hum.Health=0 end) end; task.wait(0.1)
+        if hum then pcall(function() hum:TakeDamage(99999) end) end; task.wait(0.1)
+        local root=char:FindFirstChild("HumanoidRootPart")
+        if root then pcall(function() root:Destroy() end) end
+    end)
+end
+
+-- ── NOTIFICATIONS ───────────────────────────────────────────
+local NotifFrame=Instance.new("Frame",SG); NotifFrame.Size=UDim2.new(0,220,1,0)
+NotifFrame.Position=UDim2.new(1,-228,0,0); NotifFrame.BackgroundTransparency=1; NotifFrame.BorderSizePixel=0
+local NotifLayout=Instance.new("UIListLayout",NotifFrame)
+NotifLayout.SortOrder=Enum.SortOrder.LayoutOrder; NotifLayout.VerticalAlignment=Enum.VerticalAlignment.Bottom; NotifLayout.Padding=UDim.new(0,5)
+local notifCount=0
+
+function notify(title,msg,ntype)
+    notifCount+=1
+    local color=ntype=="success" and GRN or ntype=="warn" and YEL or ACC
+    local n=Instance.new("Frame",NotifFrame); n.Size=UDim2.new(1,0,0,44)
+    n.BackgroundColor3=CARD; n.BorderSizePixel=1; n.BorderColor3=color
+    n.LayoutOrder=notifCount; n.ClipsDescendants=true
+    local bar=Instance.new("Frame",n); bar.Size=UDim2.new(0,2,1,0); bar.BackgroundColor3=color; bar.BorderSizePixel=0
+    local tl=Instance.new("TextLabel",n); tl.Text=title:lower(); tl.Font=Enum.Font.Code; tl.TextSize=11
+    tl.TextColor3=TXT; tl.BackgroundTransparency=1; tl.Size=UDim2.new(1,-16,0,14); tl.Position=UDim2.new(0,8,0,6); tl.TextXAlignment=Enum.TextXAlignment.Left
+    local ml=Instance.new("TextLabel",n); ml.Text=msg; ml.Font=Enum.Font.Code; ml.TextSize=9
+    ml.TextColor3=SUB; ml.BackgroundTransparency=1; ml.Size=UDim2.new(1,-16,0,13); ml.Position=UDim2.new(0,8,0,22); ml.TextXAlignment=Enum.TextXAlignment.Left; ml.TextWrapped=true
+    local prog=Instance.new("Frame",n); prog.Size=UDim2.new(1,0,0,1); prog.Position=UDim2.new(0,0,1,-1)
+    prog.BackgroundColor3=color; prog.BorderSizePixel=0
+    TweenService:Create(prog,TweenInfo.new(3,Enum.EasingStyle.Linear),{Size=UDim2.new(0,0,0,1)}):Play()
+    n.Position=UDim2.new(1,4,0,0)
+    TweenService:Create(n,TweenInfo.new(0.15),{Position=UDim2.new(0,0,0,0)}):Play()
+    task.delay(3,function()
+        if n.Parent then
+            TweenService:Create(n,TweenInfo.new(0.15),{Position=UDim2.new(1,4,0,0)}):Play()
+            task.wait(0.16); if n.Parent then n:Destroy() end
+        end
+    end)
+end
+
+-- ── AUTOFARM LOGIC ──────────────────────────────────────────
+local SELLER_POS = Vector3.new(510.0, 3.7, 604.1)
+local farmStats = {
+    status="Idle", batches=0, small=0, medium=0, large=0,
+    failed=0, sessionStart=tick(), cookStart=nil,
+    stepEnd=nil, stepTotal=0, lastBatch="", batchLog={},
+    totalCookSecs=0, cookCount=0,
+}
+
+local function getSizeFromName(name)
+    local n=name:lower()
+    if n:find("large") then return "Large"
+    elseif n:find("medium") then return "Medium"
+    elseif n:find("small") then return "Small"
+    else return "Small" end
+end
+
+local function countInv(name)
+    local n=0
+    pcall(function()
+        for _,v in ipairs(LP.Backpack:GetChildren()) do if v:IsA("Tool") and v.Name==name then n+=1 end end
+        if LP.Character then for _,v in ipairs(LP.Character:GetChildren()) do if v:IsA("Tool") and v.Name==name then n+=1 end end end
+    end)
+    return n
+end
+
+local function getMarshmallows()
+    local items={}
+    local function scan(c) if not c then return end
+        for _,v in ipairs(c:GetChildren()) do
+            if v:IsA("Tool") then local n=v.Name:lower(); if n:find("marshmallow") or n:find("marsh") then table.insert(items,v) end end
+        end
+    end
+    scan(LP.Backpack); if LP.Character then scan(LP.Character) end
+    return items
+end
+
+local function countMarshmallowInv()
+    return #getMarshmallows()
+end
+
+local function logBatch(size)
+    table.insert(farmStats.batchLog,1,size)
+    if #farmStats.batchLog>5 then table.remove(farmStats.batchLog) end
+    farmStats.lastBatch=size
+end
+
+local function equipItem(name)
+    local c=LP.Character; if not c then return false end
+    if c:FindFirstChild(name) then return true end
+    local tool=LP.Backpack:FindFirstChild(name); if not tool then return false end
+    local hum=c:FindFirstChildOfClass("Humanoid"); if not hum then return false end
+    pcall(function() hum:EquipTool(tool) end); task.wait(0.2)
+    return c:FindFirstChild(name)~=nil
+end
+
+local function equipWithRetry(name)
+    for i=1,3 do
+        if equipItem(name) then return true end
+        farmStats.status="⚠ Retry "..name.." ("..i.."/3)"; task.wait(0.5)
+    end
+    return false
+end
+
+local function unequipAll()
+    local c=LP.Character; if not c then return end
+    local hum=c:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    pcall(function() hum:UnequipTools() end); task.wait(0.15)
+end
+
+local farmEnabled=false
+local function waitI(secs)
+    farmStats.stepEnd=tick()+secs; farmStats.stepTotal=secs
+    local t=0
+    while farmEnabled and t<secs do task.wait(0.2); t+=0.2 end
+    farmStats.stepEnd=nil; farmStats.stepTotal=0
+end
+
+local function pressE()
+    VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+    task.wait(0.1)
+    VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+end
+
+local function playErrorSound()
+    pcall(function()
+        local s=Instance.new("Sound",workspace); s.SoundId="rbxassetid://131961136"
+        s.Volume=0.5; s.RollOffMaxDistance=0; s:Play()
+        game:GetService("Debris"):AddItem(s,3)
+    end)
+end
+
+local function buyByText(searchText)
+    for _=1,30 do
+        for _,v in ipairs(LP.PlayerGui:GetDescendants()) do
+            if v:IsA("TextButton") and v.Visible then
+                if v.Text:upper():find(searchText:upper(),1,true) then
+                    pcall(function() v.MouseButton1Click:Fire() end)
+                    pcall(function()
+                        local pos=v.AbsolutePosition+v.AbsoluteSize*0.5
+                        VIM:SendMouseButtonEvent(pos.X,pos.Y,0,true,game,1)
+                        task.wait(0.05)
+                        VIM:SendMouseButtonEvent(pos.X,pos.Y,0,false,game,1)
+                    end)
+                    unequipAll(); return true
+                end
+            end
+        end
+        task.wait(0.1)
+    end
+    return false
+end
+
+local function doCook()
+    farmStats.cookStart=tick()
+    local function fail(msg)
+        playErrorSound(); farmStats.status=msg; farmStats.failed+=1; farmStats.cookStart=nil; return false
+    end
+
+    farmStats.status="Equipping Water..."
+    if not equipWithRetry("Water") then return fail("❌ No Water!") end
+    task.wait(0.05); pressE()
+    farmStats.status="⏳ Water (22s)"; waitI(22)
+    if not farmEnabled then farmStats.cookStart=nil; return false end
+
+    farmStats.status="Equipping Sugar Block Bag..."
+    if equipWithRetry("Sugar Block Bag") then
+        task.wait(0.05); pressE()
+        farmStats.status="⏳ Sugar (2.5s)"; waitI(2.5)
+        if not farmEnabled then farmStats.cookStart=nil; return false end
+    end
+
+    farmStats.status="Equipping Gelatin..."
+    if equipWithRetry("Gelatin") then
+        task.wait(0.05); pressE()
+        farmStats.status="⏳ Cooking (47s)"; waitI(47)
+        if not farmEnabled then farmStats.cookStart=nil; return false end
+    end
+
+    farmStats.status="Waiting for Empty Bag..."
+    local w=0
+    while w<6 and farmEnabled do
+        if LP.Backpack:FindFirstChild("Empty Bag") or (LP.Character and LP.Character:FindFirstChild("Empty Bag")) then break end
+        task.wait(0.5); w+=0.5
+    end
+    if not farmEnabled then farmStats.cookStart=nil; return false end
+
+    farmStats.status="Collecting marshmallow..."
+    local function countWord(word)
+        local n=0
+        local function scan(c) if not c then return end
+            for _,v in ipairs(c:GetChildren()) do if v:IsA("Tool") and v.Name:lower():find(word) then n+=1 end end
+        end
+        scan(LP.Backpack); if LP.Character then scan(LP.Character) end; return n
+    end
+    local preSm=countWord("small"); local preMd=countWord("medium"); local preLg=countWord("large")
+
+    if equipWithRetry("Empty Bag") then
+        task.wait(0.05); pressE(); task.wait(2)
+    end
+
+    local diffLg=countWord("large")-preLg; local diffMd=countWord("medium")-preMd; local diffSm=countWord("small")-preSm
+    local gotSize=nil
+    if diffLg>0 then gotSize="Large" elseif diffMd>0 then gotSize="Medium" elseif diffSm>0 then gotSize="Small" end
+
+    if not gotSize then
+        local function scanAny(c) if not c then return end
+            for _,v in ipairs(c:GetChildren()) do
+                if v:IsA("Tool") then local n=v.Name:lower()
+                    if n:find("marshmallow") or n:find("marsh") then
+                        if n:find("large") then gotSize="Large"
+                        elseif n:find("medium") then gotSize="Medium"
+                        elseif n:find("small") then gotSize="Small" end
+                        farmStats.lastBatch=v.Name; return
+                    end
+                end
+            end
+        end
+        scanAny(LP.Backpack); if not gotSize and LP.Character then scanAny(LP.Character) end
+    end
+
+    if gotSize then
+        if gotSize=="Large" then farmStats.large+=1
+        elseif gotSize=="Medium" then farmStats.medium+=1
+        else farmStats.small+=1 end
+        logBatch(gotSize); farmStats.status="✅ Got "..gotSize.." MS!"
+    else
+        farmStats.status="⚠ Collected (unknown)"; farmStats.small+=1; logBatch("?")
+    end
+
+    farmStats.batches+=1
+    if farmStats.cookStart then farmStats.totalCookSecs+=tick()-farmStats.cookStart; farmStats.cookCount+=1 end
+    farmStats.cookStart=nil
+    return true
+end
+
+local function doSell()
+    local ms=getMarshmallows()
+    if #ms==0 then farmStats.status="Nothing to sell"; return end
+    smoothTeleport(SELLER_POS); task.wait(1)
+    local sold=0; ms=getMarshmallows()
+    while #ms>0 and farmEnabled do
+        local item=ms[1]
+        if item.Parent~=LP.Character then
+            local hum=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+            if hum then pcall(function() hum:EquipTool(item) end); task.wait(0.3) end
+        end
+        if item.Parent==LP.Character then
+            pressE(); task.wait(1); sold+=1
+        else
+            pcall(function() item.Parent=LP.Character end); task.wait(0.3); pressE(); task.wait(1); sold+=1
+        end
+        ms=getMarshmallows()
+    end
+    farmStats.status="Sold "..sold.." MS"; unequipAll()
+end
+
+local function doBuy()
+    smoothTeleport(SELLER_POS); task.wait(0.8)
+    farmStats.status="Buying supplies..."
+    if countInv("Water")==0 then buyByText("WATER"); task.wait(0.5) end
+    if countInv("Sugar Block Bag")==0 then buyByText("SUGAR BLOCK BAG"); task.wait(0.5) end
+    if countInv("Gelatin")==0 then buyByText("GELATIN"); task.wait(0.5) end
+    unequipAll(); farmStats.status="Supplies bought"
+end
+
+local farmWatch=nil
+local function stopFarm()
+    farmEnabled=false
+    if S.Farm.Thread then task.cancel(S.Farm.Thread); S.Farm.Thread=nil end
+    if farmWatch then task.cancel(farmWatch); farmWatch=nil end
+    farmStats.cookStart=nil; farmStats.stepEnd=nil; farmStats.status="Idle"
+end
+
+local lastStatusTime=tick(); local lastFarmStatus=""
+local function startWatchdog()
+    if farmWatch then task.cancel(farmWatch); farmWatch=nil end
+    farmWatch=task.spawn(function()
+        while farmEnabled do
+            task.wait(5)
+            if farmStats.status~=lastFarmStatus then lastFarmStatus=farmStats.status; lastStatusTime=tick() end
+            if farmEnabled and tick()-lastStatusTime>90 then
+                playErrorSound(); farmStats.status="🔄 Watchdog restart!"
+                if S.Farm.Thread then task.cancel(S.Farm.Thread); S.Farm.Thread=nil end
+                farmStats.cookStart=nil; farmStats.stepEnd=nil; lastStatusTime=tick()
+                S.Farm.Thread=task.spawn(function()
+                    while farmEnabled do
+                        local ok=doCook()
+                        if not ok and farmEnabled then task.wait(2) end
+                        if S.Farm.Looping and farmEnabled then doSell(); doBuy() end
+                        task.wait(0.3)
+                    end
+                    farmStats.status="Idle"
+                end)
+            end
+        end
+    end)
+end
+
+local function startFarm()
+    stopFarm(); farmEnabled=true; S.Farm.Looping=false
+    startWatchdog()
+    S.Farm.Thread=task.spawn(function()
+        while farmEnabled do
+            local ok=doCook()
+            if not ok and farmEnabled then task.wait(2) end
+            task.wait(0.3)
+        end
+        farmStats.status="Idle"
+    end)
+end
+
+local function startLoop()
+    stopFarm(); farmEnabled=true; S.Farm.Looping=true
+    if countInv("Water")==0 or countInv("Sugar Block Bag")==0 or countInv("Gelatin")==0 then doBuy() end
+    startWatchdog()
+    S.Farm.Thread=task.spawn(function()
+        while farmEnabled do
+            local ok=doCook()
+            if not farmEnabled then break end
+            if not ok then task.wait(2); doBuy(); continue end
+            doSell(); if not farmEnabled then break end
+            doBuy(); task.wait(0.5)
+        end
+        farmStats.status="Idle"
+    end)
+end
+
+-- Persistent marshmallow watcher (when farm is off)
+LP.Backpack.ChildAdded:Connect(function(item)
+    if not item:IsA("Tool") then return end
+    local n=item.Name:lower()
+    if not (n:find("marshmallow") or n:find("marsh")) then return end
+    if not farmEnabled then
+        local size=getSizeFromName(item.Name)
+        if size=="Large" then farmStats.large+=1
+        elseif size=="Medium" then farmStats.medium+=1
+        else farmStats.small+=1 end
+        farmStats.batches+=1; logBatch(size)
+        farmStats.lastBatch=item.Name
+        farmStats.status="✅ Got "..size.." MS!"
+    end
+end)
+LP.CharacterAdded:Connect(function() task.wait(0.5); LP.Backpack.ChildAdded:Connect(function(item)
+    if not item:IsA("Tool") then return end
+    local n=item.Name:lower(); if not (n:find("marshmallow") or n:find("marsh")) then return end
+    if not farmEnabled then
+        local size=getSizeFromName(item.Name)
+        if size=="Large" then farmStats.large+=1 elseif size=="Medium" then farmStats.medium+=1 else farmStats.small+=1 end
+        farmStats.batches+=1; logBatch(size); farmStats.lastBatch=item.Name; farmStats.status="✅ Got "..size.." MS!"
+    end
+end) end)
+
+-- ── MAIN WINDOW ─────────────────────────────────────────────
+local W,H=560,400
+local Main=Instance.new("Frame",SG); Main.Name="Main"; Main.Active=true
+Main.Size=UDim2.new(0,W,0,H); Main.Position=UDim2.new(0.5,-W/2,0.5,-H/2)
+Main.BackgroundColor3=BASE; Main.BorderSizePixel=1; Main.BorderColor3=Color3.fromRGB(50,50,55)
+Main.ClipsDescendants=true
+local _tl=Instance.new("Frame",Main); _tl.Size=UDim2.new(1,0,0,2); _tl.BackgroundColor3=ACC; _tl.BorderSizePixel=0; _tl.ZIndex=20
+
+-- Sidebar
+local Sidebar=Instance.new("Frame",Main); Sidebar.Size=UDim2.new(0,52,1,0); Sidebar.BackgroundColor3=SURF; Sidebar.BorderSizePixel=0
+local _sep=Instance.new("Frame",Main); _sep.Size=UDim2.new(0,1,1,0); _sep.Position=UDim2.new(0,52,0,0); _sep.BackgroundColor3=BDR; _sep.BorderSizePixel=0
+local _lb=Instance.new("Frame",Sidebar); _lb.Size=UDim2.new(1,0,0,30); _lb.Position=UDim2.new(0,0,0,6); _lb.BackgroundColor3=ACC; _lb.BorderSizePixel=0
+local _lt=Instance.new("TextLabel",_lb); _lt.Text="1k"; _lt.Font=Enum.Font.Code; _lt.TextSize=12; _lt.TextColor3=WHT
+_lt.BackgroundTransparency=1; _lt.Size=UDim2.new(1,0,1,0); _lt.TextXAlignment=Enum.TextXAlignment.Center; _lt.TextYAlignment=Enum.TextYAlignment.Center
+
+local TABS={
+    {id="Combat",   icon="⚔",  label="Combat",    y=52},
+    {id="Visual",   icon="👁",  label="Visual",    y=92},
+    {id="Movement", icon="🏃",  label="Movement",  y=132},
+    {id="Teleport", icon="🌀",  label="Teleport",  y=172},
+    {id="Players",  icon="👥",  label="Players",   y=212},
+    {id="Autofarm", icon="🍡",  label="Autofarm",  y=252},
+    {id="Settings", icon="⚙",  label="Settings",  y=nil},
+}
+
+local NavBtns={}
+for _,tab in ipairs(TABS) do
+    local btn=Instance.new("TextButton",Sidebar); btn.Name=tab.id
+    btn.Size=UDim2.new(1,0,0,32); btn.BorderSizePixel=0; btn.AutoButtonColor=false; btn.Text=tab.icon
+    btn.Font=Enum.Font.GothamBold; btn.TextSize=14; btn.TextColor3=SUB
+    btn.BackgroundColor3=SURF
+    if tab.y then btn.Position=UDim2.new(0,0,0,tab.y-4)
+    else btn.Position=UDim2.new(0,0,1,-44) end
+    local bar=Instance.new("Frame",btn); bar.Name="Bar"; bar.Size=UDim2.new(0,2,0,0)
+    bar.Position=UDim2.new(0,0,0.5,0); bar.AnchorPoint=Vector2.new(0,0.5)
+    bar.BackgroundColor3=ACC; bar.BorderSizePixel=0
+    NavBtns[tab.id]={Btn=btn,Bar=bar,Icon=btn}
+end
+
+local ContentArea=Instance.new("Frame",Main); ContentArea.Name="Content"
+ContentArea.Size=UDim2.new(1,-46,1,0); ContentArea.Position=UDim2.new(0,46,0,0)
+ContentArea.BackgroundTransparency=1; ContentArea.ClipsDescendants=true
+
+local TopBar=Instance.new("Frame",ContentArea); TopBar.Size=UDim2.new(1,0,0,30); TopBar.BackgroundColor3=SURF; TopBar.BorderSizePixel=0
+local _tbd=Instance.new("Frame",ContentArea); _tbd.Size=UDim2.new(1,0,0,1); _tbd.Position=UDim2.new(0,0,0,30); _tbd.BackgroundColor3=BDR; _tbd.BorderSizePixel=0
+
+local PageTitleLbl=Instance.new("TextLabel",TopBar); PageTitleLbl.Text="combat"
+PageTitleLbl.Font=Enum.Font.Code; PageTitleLbl.TextSize=12; PageTitleLbl.TextColor3=TXT
+PageTitleLbl.BackgroundTransparency=1; PageTitleLbl.Size=UDim2.new(1,-90,1,0); PageTitleLbl.Position=UDim2.new(0,10,0,0)
+PageTitleLbl.TextXAlignment=Enum.TextXAlignment.Left
+
+local _vl=Instance.new("TextLabel",TopBar); _vl.Text="1k hub"; _vl.Font=Enum.Font.Code; _vl.TextSize=9
+_vl.TextColor3=SUB; _vl.BackgroundTransparency=1; _vl.Size=UDim2.new(0,36,1,0); _vl.Position=UDim2.new(1,-80,0,0); _vl.TextXAlignment=Enum.TextXAlignment.Center
+
+local CloseBtn=Instance.new("TextButton",TopBar); CloseBtn.Text="x"; CloseBtn.Font=Enum.Font.Code; CloseBtn.TextSize=12
+CloseBtn.TextColor3=ACC; CloseBtn.BackgroundColor3=SURF
+CloseBtn.Size=UDim2.new(0,22,0,22); CloseBtn.Position=UDim2.new(1,-26,0.5,-11); CloseBtn.BorderSizePixel=0; CloseBtn.AutoButtonColor=true
+CloseBtn.MouseButton1Click:Connect(function() S.GUI.Visible=false; Main.Visible=false end)
+
+TopBar.InputBegan:Connect(function(inp)
+    if inp.UserInputType==Enum.UserInputType.MouseButton1 then
+        S.GUI.Dragging=true; S.GUI.DragOff=Vector2.new(inp.Position.X-Main.AbsolutePosition.X,inp.Position.Y-Main.AbsolutePosition.Y)
+    end
+end)
+TopBar.InputEnded:Connect(function(inp)
+    if inp.UserInputType==Enum.UserInputType.MouseButton1 then S.GUI.Dragging=false end
+end)
+
+local Pages={}
+local function makePage(id)
+    local p=Instance.new("ScrollingFrame",ContentArea); p.Name=id
+    p.Size=UDim2.new(1,0,1,-41); p.Position=UDim2.new(0,0,0,41)
+    p.BackgroundTransparency=1; p.BorderSizePixel=0
+    p.ScrollBarThickness=2; p.ScrollBarImageColor3=ACC
+    p.CanvasSize=UDim2.new(0,0,0,800); p.Visible=false
+    local pad=Instance.new("UIPadding",p)
+    pad.PaddingLeft=UDim.new(0,10); pad.PaddingRight=UDim.new(0,10); pad.PaddingTop=UDim.new(0,8)
+    Pages[id]=p; return p
+end
+
+-- ── UI BUILDERS ─────────────────────────────────────────────
+local function Section(parent,text)
+    local f=Instance.new("Frame",parent); f.Size=UDim2.new(1,0,0,16); f.BackgroundTransparency=1
+    local lbl=Instance.new("TextLabel",f); lbl.Text=text:lower(); lbl.Font=Enum.Font.Code; lbl.TextSize=10
+    lbl.TextColor3=ACC; lbl.BackgroundTransparency=1; lbl.Size=UDim2.new(1,0,1,0); lbl.TextXAlignment=Enum.TextXAlignment.Left
+    return f
+end
+
+local function Toggle(parent,label,sublabel,cb,defaultOn)
+    local row=Instance.new("Frame",parent)
+    row.Size=UDim2.new(1,0,0,26); row.BackgroundColor3=CARD; row.BorderSizePixel=0
+    local lbl=Instance.new("TextLabel",row); lbl.Text=label:lower(); lbl.Font=Enum.Font.Code; lbl.TextSize=11; lbl.TextColor3=TXT
+    lbl.BackgroundTransparency=1; lbl.Size=UDim2.new(1,-60,1,0); lbl.Position=UDim2.new(0,8,0,0); lbl.TextXAlignment=Enum.TextXAlignment.Left
+    local hb=Instance.new("TextButton",row); hb.Size=UDim2.new(0,50,0,20); hb.Position=UDim2.new(1,-54,0.5,-10)
+    hb.Font=Enum.Font.Code; hb.TextSize=10; hb.BorderSizePixel=0; hb.AutoButtonColor=false
+    local on=defaultOn or false
+    local function refresh(v)
+        hb.Text=v and "[ on ]" or "[ off ]"
+        hb.TextColor3=v and GRN or SUB
+        hb.BackgroundColor3=v and CARDON or CARD
+        row.BackgroundColor3=v and CARDON or CARD
+    end
+    refresh(on)
+    hb.MouseButton1Click:Connect(function()
+        on=not on; refresh(on); if cb then cb(on) end
+    end)
+    return row, function(v) on=v; refresh(v); if cb then cb(v) end end
+end
+
+local function Slider(parent,label,unit,min,max,cur,cb)
+    local row=Instance.new("Frame",parent); row.Size=UDim2.new(1,0,0,40)
+    row.BackgroundColor3=CARD; row.BorderSizePixel=0
+    local lbl=Instance.new("TextLabel",row); lbl.Font=Enum.Font.Code; lbl.TextSize=10; lbl.TextColor3=TXT
+    lbl.BackgroundTransparency=1; lbl.Size=UDim2.new(0.6,0,0,14); lbl.Position=UDim2.new(0,8,0,4); lbl.TextXAlignment=Enum.TextXAlignment.Left
+    local valLbl=Instance.new("TextLabel",row); valLbl.Font=Enum.Font.Code; valLbl.TextSize=10; valLbl.TextColor3=ACC
+    valLbl.BackgroundTransparency=1; valLbl.Size=UDim2.new(0.4,-8,0,14); valLbl.Position=UDim2.new(0.6,0,0,4); valLbl.TextXAlignment=Enum.TextXAlignment.Right
+    local function setV(v) lbl.Text=label:lower(); valLbl.Text=string.format("%.1f",v)..(unit or "") end; setV(cur)
+    local track=Instance.new("Frame",row); track.Size=UDim2.new(1,-16,0,2); track.Position=UDim2.new(0,8,0,28)
+    track.BackgroundColor3=BDR; track.BorderSizePixel=0
+    local fill=Instance.new("Frame",track); fill.Size=UDim2.new((cur-min)/(max-min),0,1,0); fill.BackgroundColor3=ACC; fill.BorderSizePixel=0
+    local dot=Instance.new("Frame",track); dot.Size=UDim2.new(0,8,0,8); dot.AnchorPoint=Vector2.new(0.5,0.5)
+    dot.Position=UDim2.new((cur-min)/(max-min),0,0.5,0); dot.BackgroundColor3=WHT; dot.BorderSizePixel=0
+    track.InputBegan:Connect(function(inp)
+        if inp.UserInputType==Enum.UserInputType.MouseButton1 then
+            S.ActiveSlider={track=track,fill=fill,dot=dot,min=min,max=max,setV=setV,cb=cb}
+        end
+    end)
+    return row
+end
+
+local function Button(parent,label,sublabel,color,cb)
+    local btn=Instance.new("TextButton",parent); btn.Text=label:lower()
+    btn.Font=Enum.Font.Code; btn.TextSize=11; btn.TextColor3=TXT
+    btn.BackgroundColor3=CARD; btn.Size=UDim2.new(1,0,0,26); btn.BorderSizePixel=0; btn.AutoButtonColor=true
+    btn.TextXAlignment=Enum.TextXAlignment.Left
+    local pad=Instance.new("UIPadding",btn); pad.PaddingLeft=UDim.new(0,8)
+    btn.MouseButton1Click:Connect(function() if cb then cb(btn) end end)
+    return btn
+end
+
+local function Spacer(parent) local s=Instance.new("Frame",parent); s.Size=UDim2.new(1,0,0,4); s.BackgroundTransparency=1; return s end
+
+local function setupPageLayout(page)
+    local l=Instance.new("UIListLayout",page); l.SortOrder=Enum.SortOrder.LayoutOrder; l.Padding=UDim.new(0,2)
+    l:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() page.CanvasSize=UDim2.new(0,0,0,l.AbsoluteContentSize.Y+20) end)
+    return l
+end
+
+local function switchTab(id)
+    S.GUI.Tab=id; PageTitleLbl.Text=id:lower()
+    for _,tab in ipairs(TABS) do
+        local d=NavBtns[tab.id]; local active=tab.id==id
+        d.Btn.BackgroundColor3=active and CARDON or SURF
+        d.Btn.TextColor3=active and ACC or SUB
+        d.Bar.Size=active and UDim2.new(0,2,0.6,0) or UDim2.new(0,2,0,0)
+    end
+    for pid,page in pairs(Pages) do page.Visible=pid==id end
+end
+for _,tab in ipairs(TABS) do NavBtns[tab.id].Btn.MouseButton1Click:Connect(function() switchTab(tab.id) end) end
+
+-- ── COMBAT PAGE ─────────────────────────────────────────────
+local CP=makePage("Combat"); setupPageLayout(CP)
+Section(CP,"Aimlock")
+Toggle(CP,"Enable Aimlock","Hold Q to lock onto target",function(on) S.Aimlock.Enabled=on end)
+Toggle(CP,"Silent Aim","Redirect shots to target",function(on) S.SilentAim.Enabled=on end)
+Slider(CP,"FOV Radius"," px",10,400,160,function(v) S.Aimlock.FOV=v end)
+Slider(CP,"Smoothness","",0.01,1,0.15,function(v) S.Aimlock.Smooth=v end)
+Spacer(CP)
+Section(CP,"Anti-Aim")
+Toggle(CP,"Anti-Aim","Spins HRP to deflect hits",function(on)
+    if on then
+        local spinAngle=0
+        S.AntiAim.Conn=RunService.RenderStepped:Connect(function(dt)
+            if not S.AntiAim.Enabled then return end
+            local char=LP.Character; local root=char and char:FindFirstChild("HumanoidRootPart"); if not root then return end
+            spinAngle=(spinAngle+dt*720)%360
+            root.CFrame=CFrame.new(root.Position)*CFrame.Angles(0,math.rad(spinAngle),0)
+        end)
+    else if S.AntiAim.Conn then S.AntiAim.Conn:Disconnect(); S.AntiAim.Conn=nil end end
+    S.AntiAim.Enabled=on
+end)
+Spacer(CP)
+Section(CP,"Character")
+Button(CP,"Reset Character","Set HP to 0 and respawn",nil,function(b)
+    local lbl=b:FindFirstChildOfClass("TextLabel"); if lbl then lbl.Text="Resetting..." end
+    local char=LP.Character; if char then local hum=char:FindFirstChildOfClass("Humanoid"); if hum then hum.Health=0 end end
+    task.wait(1); if lbl then lbl.Text="Reset Character" end
+end)
+
+-- ── VISUAL PAGE ─────────────────────────────────────────────
+local VP=makePage("Visual"); setupPageLayout(VP)
+Section(VP,"ESP")
+Toggle(VP,"Enable ESP","Highlight players through walls",function(on) S.ESP.Enabled=on; if not on then for _,p in ipairs(Players:GetPlayers()) do if S.ESP.Highlights[p] then pcall(function() S.ESP.Highlights[p]:Destroy() end); S.ESP.Highlights[p]=nil end end end end)
+Slider(VP,"ESP Distance"," studs",50,2000,500,function(v) S.ESP.Distance=v end)
+Spacer(VP)
+Section(VP,"Crosshair")
+Toggle(VP,"Custom Crosshair","Draw crosshair overlay",function(on) S.Crosshair.Enabled=on end)
+Spacer(VP)
+Section(VP,"Tracers")
+Toggle(VP,"Player Tracers","Draw lines to players",function(on) S.Tracers.Enabled=on end)
+Spacer(VP)
+Section(VP,"Environment")
+Toggle(VP,"Fullbright","Max ambient lighting",function(on)
+    if on then S.Fullbright.OrigAmb=Lighting.Ambient; S.Fullbright.OrigOut=Lighting.OutdoorAmbient
+        Lighting.Ambient=Color3.fromRGB(255,255,255); Lighting.OutdoorAmbient=Color3.fromRGB(255,255,255)
+    else if S.Fullbright.OrigAmb then Lighting.Ambient=S.Fullbright.OrigAmb; Lighting.OutdoorAmbient=S.Fullbright.OrigOut end end
+    S.Fullbright.Enabled=on
+end)
+Toggle(VP,"Remove Fog","Clear atmospheric fog",function(on)
+    if on then S.Fog.FogStart=Lighting.FogStart; S.Fog.FogEnd=Lighting.FogEnd
+        Lighting.FogStart=0; Lighting.FogEnd=1e6
+    else if S.Fog.FogStart then Lighting.FogStart=S.Fog.FogStart; Lighting.FogEnd=S.Fog.FogEnd end end
+    S.Fog.Removed=on
+end)
+Spacer(VP)
+Section(VP,"Name Changer")
+Toggle(VP,"Enable Name Changer","Changes your overhead display name",function(on) S.NameChanger.Enabled=on end)
+do
+    local row=Instance.new("Frame",VP); row.Size=UDim2.new(1,0,0,26); row.BackgroundColor3=CARD; row.BorderSizePixel=1; row.BorderColor3=BDR
+    local box=Instance.new("TextBox",row); box.Text=S.NameChanger.Custom; box.PlaceholderText="display name"
+    box.Font=Enum.Font.Code; box.TextSize=11; box.TextColor3=TXT; box.PlaceholderColor3=SUB
+    box.BackgroundTransparency=1; box.BorderSizePixel=0; box.Size=UDim2.new(1,-10,1,0); box.Position=UDim2.new(0,5,0,0)
+    box.TextXAlignment=Enum.TextXAlignment.Left; box.ClearTextOnFocus=false
+    box:GetPropertyChangedSignal("Text"):Connect(function() S.NameChanger.Custom=box.Text end)
+end
+
+-- ── MOVEMENT PAGE ───────────────────────────────────────────
+local MP=makePage("Movement"); setupPageLayout(MP)
+Section(MP,"Speed")
+Slider(MP,"Walk Speed","",8,20,16,function(v)
+    S.Movement.Speed=v; local c=LP.Character; if c then local h=c:FindFirstChildOfClass("Humanoid"); if h then h.WalkSpeed=v end end
+end)
+Slider(MP,"Gravity","",0,400,196.2,function(v) S.Gravity.Value=v; workspace.Gravity=v end)
+Spacer(MP)
+Section(MP,"Fly")
+Toggle(MP,"Enable Fly","WASD + Space to fly  [ F ]",function(on)
+    S.Fly.Enabled=on
+    local char=LP.Character; if not char then return end
+    local root=char:FindFirstChild("HumanoidRootPart"); local hum=char:FindFirstChildOfClass("Humanoid")
+    if not root or not hum then return end
+    if on then
+        hum.PlatformStand=true
+        local bv=Instance.new("BodyVelocity",root); bv.Name="1kFlyVel"; bv.Velocity=Vector3.zero; bv.MaxForce=Vector3.new(1e5,1e5,1e5)
+        local bg=Instance.new("BodyGyro",root); bg.Name="1kFlyGyro"; bg.MaxTorque=Vector3.new(1e5,1e5,1e5); bg.P=1e4; bg.CFrame=root.CFrame
+        S.Fly.Body=bv; S.Fly.Gyro=bg
+    else
+        hum.PlatformStand=false
+        if S.Fly.Body then S.Fly.Body:Destroy(); S.Fly.Body=nil end
+        if S.Fly.Gyro then S.Fly.Gyro:Destroy(); S.Fly.Gyro=nil end
+    end
+end)
+Slider(MP,"Fly Speed","",10,300,60,function(v) S.Fly.Speed=v end)
+Spacer(MP)
+Section(MP,"Noclip")
+Toggle(MP,"Enable Noclip","Phase through walls  [ V ]",function(on)
+    S.Noclip.Enabled=on
+    if not on then
+        local c=LP.Character; if c then
+            for _,p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=true end end
+            local hum=c:FindFirstChildOfClass("Humanoid")
+            if hum then pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end) end
+        end
+    end
+end)
+Spacer(MP)
+Section(MP,"Freecam")
+Toggle(MP,"Freecam Mode","Detach camera  [ C ]",function(on)
+    S.FreeCam.Enabled=on
+    if on then Cam.CameraType=Enum.CameraType.Scriptable
+    else Cam.CameraType=Enum.CameraType.Custom; Cam.CameraSubject=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") or nil end
+end)
+Slider(MP,"Freecam Speed","",10,300,60,function(v) S.FreeCam.Speed=v end)
+Spacer(MP)
+Section(MP,"Utility")
+Toggle(MP,"Infinite Stamina","Keeps stamina bar full",function(on) S.InfiniteStamina.Enabled=on end)
+Toggle(MP,"Instant Interact","Removes proximity prompt hold time",function(on)
+    S.InstantInteract.Enabled=on
+    if on then for _,v in ipairs(workspace:GetDescendants()) do if v:IsA("ProximityPrompt") then pcall(function() v.HoldDuration=0 end) end end end
+end)
+
+-- ── TELEPORT PAGE ───────────────────────────────────────────
+local TP=makePage("Teleport"); setupPageLayout(TP)
+Section(TP,"Slow Travel")
+Slider(TP,"Travel Speed","s/s",8,58,20,function(v) SlowTravel.Speed=v end)
+Spacer(TP)
+Section(TP,"Custom Teleport")
+local ctRow=Instance.new("Frame",TP); ctRow.Size=UDim2.new(1,0,0,34); ctRow.BackgroundTransparency=1
+local function makeCI(ph,xOff,w)
+    local bg=Instance.new("Frame",ctRow); bg.Size=UDim2.new(0,w,1,0); bg.Position=UDim2.new(0,xOff,0,0)
+    bg.BackgroundColor3=CARD; bg.BorderSizePixel=1; bg.BorderColor3=BDR
+    local box=Instance.new("TextBox",bg); box.Text=""; box.PlaceholderText=ph; box.Font=Enum.Font.Gotham; box.TextSize=11; box.TextColor3=TXT; box.PlaceholderColor3=SUB
+    box.BackgroundTransparency=1; box.Size=UDim2.new(1,-8,1,0); box.Position=UDim2.new(0,4,0,0); box.ClearTextOnFocus=false; box.TextXAlignment=Enum.TextXAlignment.Center
+    return box
+end
+local ctX=makeCI("X",0,80); local ctY=makeCI("Y",84,80); local ctZ=makeCI("Z",168,80)
+local ctGo=Instance.new("TextButton",ctRow); ctGo.Text="GO"; ctGo.Font=Enum.Font.GothamBold; ctGo.TextSize=11
+ctGo.TextColor3=WHT; ctGo.BackgroundColor3=ACC; ctGo.Size=UDim2.new(0,48,1,0); ctGo.Position=UDim2.new(0,252,0,0); ctGo.BorderSizePixel=0; ctGo.AutoButtonColor=false
+Instance.new("UICorner",ctGo).CornerRadius=UDim.new(0,0)
+ctGo.MouseButton1Click:Connect(function()
+    local x,y,z=tonumber(ctX.Text),tonumber(ctY.Text),tonumber(ctZ.Text)
+    if x and y and z then startSlowTravel(Vector3.new(x,y,z),string.format("%.0f,%.0f,%.0f",x,y,z))
+    else notify("Error","Enter valid X Y Z",nil) end
+end)
+Button(TP,"📍 Save Current Position","Saves XYZ to inputs",nil,function()
+    local char=LP.Character; local root=char and char:FindFirstChild("HumanoidRootPart")
+    if root then local p=root.Position; ctX.Text=string.format("%.1f",p.X); ctY.Text=string.format("%.1f",p.Y); ctZ.Text=string.format("%.1f",p.Z); notify("Saved",string.format("%.0f,%.0f,%.0f",p.X,p.Y,p.Z),"success") end
+end)
+Spacer(TP)
+Section(TP,"Quick Teleport (Die→Spawn)")
+
+local QUICK_LOCS={
+    {name="Bank",             emoji="🏦",pos=Vector3.new(-44,   6,    -337)  },
+    {name="Barber Shop",      emoji="✂", pos=Vector3.new(64,    6,    -53)   },
+    {name="Main Gun",         emoji="🔫",pos=Vector3.new(216,   6,    -173)  },
+    {name="Dealer",           emoji="💊",pos=Vector3.new(731,   7,    432)   },
+    {name="Black Market",     emoji="🕶",pos=Vector3.new(663.2, 6.9,  260.6) },
+    {name="Marshmellow",      emoji="☁", pos=Vector3.new(510.0, 3.7,  604.1) },
+    {name="YGZ TURF",         emoji="🟢",pos=Vector3.new(7.9,   20,   285)   },
+    {name="OGZ TURF",         emoji="🔵",pos=Vector3.new(108.4, 22,   -512)  },
+    {name="DOA TURF",         emoji="🔴",pos=Vector3.new(-331,  20,   -465.9)},
+    {name="Casino",           emoji="🎰",pos=Vector3.new(1129,  6,    -36)   },
+    {name="Tier",             emoji="⭐",pos=Vector3.new(1113,  7,    168)   },
+    {name="Casino Apartments",emoji="🎲",pos=Vector3.new(1164,  7,    -263)  },
+    {name="Potato Deli",      emoji="🥔",pos=Vector3.new(-776,  7,    -196)  },
+    {name="Second Gun",       emoji="🔫",pos=Vector3.new(-465,  7,    347)   },
+    {name="Box Apartments",   emoji="🏢",pos=Vector3.new(-519,  3,    130)   },
+    {name="Apartment",        emoji="🏠",pos=Vector3.new(1009,  10,   216)   },
+}
+for _,loc in ipairs(QUICK_LOCS) do
+    Button(TP,loc.emoji.."  "..loc.name,"Die and respawn at "..loc.name,nil,function() quickTeleport(loc.pos,loc.name) end)
+end
+
+Spacer(TP)
+Section(TP,"Slow Travel Locations")
+for _,loc in ipairs(QUICK_LOCS) do
+    Button(TP,"🚶 "..loc.name,"Underground travel to "..loc.name,nil,function() startSlowTravel(loc.pos,loc.name); notify("Slow Travel","→ "..loc.name,nil) end)
+end
+
+Spacer(TP)
+Section(TP,"Respawn At")
+Toggle(TP,"Auto Respawn","Instantly respawn on death",function(on) S.AutoRespawn.Enabled=on end)
+Toggle(TP,"Respawn At Bank",nil,function(on) S.DeathSpawn.BankEnabled=on end)
+Toggle(TP,"Respawn At Barber",nil,function(on) S.DeathSpawn.BarberEnabled=on end)
+Toggle(TP,"Respawn At Main Gun",nil,function(on) S.DeathSpawn.GunEnabled=on end)
+Toggle(TP,"Respawn At Dealer",nil,function(on) S.DeathSpawn.DealerEnabled=on end)
+Toggle(TP,"Respawn At Black Market",nil,function(on) S.DeathSpawn.BlackMarketEnabled=on end)
+Toggle(TP,"Respawn At Marshmellow",nil,function(on) S.DeathSpawn.MarshmellowEnabled=on end)
+Toggle(TP,"Respawn At Death Location","Respawn where you died",function(on) S.DeathSpawn.Enabled=on end)
+Spacer(TP)
+Section(TP,"Server")
+Button(TP,"🔀 Server Hop","Teleport to a fresh server",nil,function()
+    notify("Server Hop","Hopping...",nil)
+    task.spawn(function() pcall(function() TeleportService:Teleport(15124180230,LP) end) end)
+end)
+Button(TP,"🔁 Rejoin","Rejoin current server",nil,function()
+    notify("Rejoin","Rejoining...",nil)
+    task.spawn(function() pcall(function() TeleportService:Teleport(15124180230,LP) end) end)
+end)
+
+-- ── PLAYERS PAGE ────────────────────────────────────────────
+local PP=makePage("Players"); setupPageLayout(PP)
+Section(PP,"Server Players")
+local PListFrame=Instance.new("Frame",PP); PListFrame.Size=UDim2.new(1,0,0,0); PListFrame.BackgroundTransparency=1; PListFrame.AutomaticSize=Enum.AutomaticSize.Y
+local PListLayout=Instance.new("UIListLayout",PListFrame); PListLayout.SortOrder=Enum.SortOrder.LayoutOrder; PListLayout.Padding=UDim.new(0,4)
+
+local function makePlayerRow(player)
+    local row=Instance.new("Frame",PListFrame); row.Name=player.Name; row.Size=UDim2.new(1,0,0,36)
+    row.BackgroundColor3=CARD; row.BorderSizePixel=0; row.LayoutOrder=1
+    local bar=Instance.new("Frame",row); bar.Size=UDim2.new(0,2,1,0); bar.Position=UDim2.new(0,0,0,0)
+    bar.BackgroundColor3=player==LP and ACC or GRN; bar.BorderSizePixel=0
+    local nl=Instance.new("TextLabel",row); nl.Text=player.DisplayName; nl.Font=Enum.Font.Code; nl.TextSize=11
+    nl.TextColor3=player==LP and ACC or TXT; nl.BackgroundTransparency=1; nl.Size=UDim2.new(1,-80,0,14); nl.Position=UDim2.new(0,10,0,5); nl.TextXAlignment=Enum.TextXAlignment.Left
+    local ul=Instance.new("TextLabel",row); ul.Text="@"..player.Name; ul.Font=Enum.Font.Code; ul.TextSize=9
+    ul.TextColor3=SUB; ul.BackgroundTransparency=1; ul.Size=UDim2.new(1,-80,0,12); ul.Position=UDim2.new(0,10,0,20); ul.TextXAlignment=Enum.TextXAlignment.Left
+    local pl=Instance.new("TextLabel",row); pl.Font=Enum.Font.Code; pl.TextSize=10; pl.TextColor3=GRN; pl.BackgroundTransparency=1
+    pl.Size=UDim2.new(0,50,1,0); pl.Position=UDim2.new(1,-52,0,0); pl.TextXAlignment=Enum.TextXAlignment.Right
+    task.spawn(function()
+        while row.Parent do
+            local ok,p=pcall(function() return player:GetNetworkPing() end)
+            if ok then local ms=math.floor(p*1000); pl.Text=ms.."ms"; pl.TextColor3=ms<80 and GRN or ms<150 and YEL or ACC end
+            task.wait(2)
+        end
+    end)
+end
+
+local function refreshPlayers()
+    for _,c in ipairs(PListFrame:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
+    for _,p in ipairs(Players:GetPlayers()) do makePlayerRow(p) end
+end
+refreshPlayers(); Players.PlayerAdded:Connect(refreshPlayers); Players.PlayerRemoving:Connect(function() task.wait(0.1); refreshPlayers() end)
+
+Spacer(PP)
+Section(PP,"AFK Bypass")
+Toggle(PP,"AFK Bypass","Jump every 55s to prevent kick",function(on)
+    S.AFKBypass.Enabled=on
+    if S.AFKBypass.Thread then task.cancel(S.AFKBypass.Thread); S.AFKBypass.Thread=nil end
+    if on then
+        S.AFKBypass.Thread=task.spawn(function()
+            while S.AFKBypass.Enabled do
+                task.wait(55); if not S.AFKBypass.Enabled then break end
+                VIM:SendKeyEvent(true,Enum.KeyCode.Space,false,game); task.wait(0.05)
+                VIM:SendKeyEvent(false,Enum.KeyCode.Space,false,game)
+            end
+        end)
+    end
+end)
+Toggle(PP,"Proximity Alert","Notify when someone gets close",function(on) S.NearAlert.Enabled=on end)
+Slider(PP,"Alert Radius"," studs",5,100,20,function(v) S.NearAlert.Radius=v end)
+
+-- ── AUTOFARM PAGE ───────────────────────────────────────────
+local AFP=makePage("Autofarm"); setupPageLayout(AFP)
+
+-- Stats card
+local statCard=Instance.new("Frame",AFP); statCard.Size=UDim2.new(1,0,0,0); statCard.AutomaticSize=Enum.AutomaticSize.Y; statCard.BackgroundColor3=CARD; statCard.BorderSizePixel=0
+local sc_l=Instance.new("UIListLayout",statCard); sc_l.Padding=UDim.new(0,0); sc_l.SortOrder=Enum.SortOrder.LayoutOrder
+local sc_p=Instance.new("UIPadding",statCard); sc_p.PaddingLeft=UDim.new(0,8); sc_p.PaddingRight=UDim.new(0,8); sc_p.PaddingTop=UDim.new(0,6); sc_p.PaddingBottom=UDim.new(0,6)
+
+local function statLine(text,col,order)
+    local l=Instance.new("TextLabel",statCard); l.Text=text; l.Font=Enum.Font.Code; l.TextSize=10
+    l.TextColor3=col; l.BackgroundTransparency=1; l.Size=UDim2.new(1,0,0,13); l.TextXAlignment=Enum.TextXAlignment.Left; l.LayoutOrder=order
+    return l
+end
+
+local lFStatus  = statLine("Status: Idle",          CYAN,  1)
+local lFTimer   = statLine("⏱ --",                  YEL,   2)
+local lFCook    = statLine("🕐 Cook: --",            Color3.fromRGB(255,160,60), 3)
+local lFAvg     = statLine("📊 Avg: --",             SUB,   4)
+local lFSession = statLine("⏳ Session: 0:00",       SUB,   5)
+local lFBatches = statLine("Batches Done: 0",        TXT,   6)
+local lFSmall   = statLine("Small (total): 0",       GRN,   7)
+local lFMedium  = statLine("Medium (total): 0",      GRN,   8)
+local lFLarge   = statLine("Large (total): 0",       GRN,   9)
+local lFInBag   = statLine("In bag now: 0",          YEL,   10)
+local lFLast    = statLine("Last bag: --",           YEL,   11)
+local lFLog     = statLine("Last 5: --",             GRN,   12)
+local lFWater   = statLine("Water: 0",               Color3.fromRGB(180,180,255), 13)
+local lFSugar   = statLine("Sugar Block Bag: 0",     Color3.fromRGB(180,180,255), 14)
+local lFGelatin = statLine("Gelatin: 0",             Color3.fromRGB(180,180,255), 15)
+local lFFailed  = statLine("Failed: 0",              ACC,   16)
+
+-- Live update
+task.spawn(function()
+    while SG.Parent do
+        local now=tick()
+        lFStatus.Text="Status: "..farmStats.status
+        if farmStats.stepEnd then
+            local rem=math.max(0,farmStats.stepEnd-now)
+            local pct=math.floor((1-rem/math.max(farmStats.stepTotal,1))*100)
+            lFTimer.Text=string.format("⏱ %.1fs left [%d%%]",rem,pct)
+            lFTimer.TextColor3=rem<5 and ACC or YEL
+        else lFTimer.Text="⏱ --"; lFTimer.TextColor3=YEL end
+        if farmStats.cookStart then
+            local e=math.floor(now-farmStats.cookStart)
+            lFCook.Text=string.format("🕐 Cook: %d:%02d",math.floor(e/60),e%60)
+        else lFCook.Text="🕐 Cook: --" end
+        if farmStats.cookCount>0 then
+            local avg=math.floor(farmStats.totalCookSecs/farmStats.cookCount)
+            lFAvg.Text=string.format("📊 Avg: %d:%02d",math.floor(avg/60),avg%60)
+        else lFAvg.Text="📊 Avg: --" end
+        local s=math.floor(now-farmStats.sessionStart)
+        lFSession.Text=string.format("⏳ Session: %d:%02d",math.floor(s/60),s%60)
+        lFBatches.Text="Batches Done: "..farmStats.batches
+        lFSmall.Text  ="Small (total): "..farmStats.small
+        lFMedium.Text ="Medium (total): "..farmStats.medium
+        lFLarge.Text  ="Large (total): "..farmStats.large
+        lFInBag.Text  ="In bag now: "..countMarshmallowInv()
+        lFLast.Text   ="Last bag: "..(farmStats.lastBatch~="" and farmStats.lastBatch or "--")
+        if #farmStats.batchLog>0 then lFLog.Text="Last 5: "..table.concat(farmStats.batchLog," · ") end
+        lFWater.Text  ="Water: "..countInv("Water")
+        lFSugar.Text  ="Sugar Block Bag: "..countInv("Sugar Block Bag")
+        lFGelatin.Text="Gelatin: "..countInv("Gelatin")
+        lFFailed.Text ="Failed: "..farmStats.failed
+        task.wait(0.2)
+    end
+end)
+
+Spacer(AFP)
+Section(AFP,"Buy Supplies")
+Button(AFP,"Buy Water","TP to seller and buy",nil,function() task.spawn(function() smoothTeleport(SELLER_POS); task.wait(0.8); buyByText("WATER") end) end)
+Button(AFP,"Buy Sugar Block Bag","TP to seller and buy",nil,function() task.spawn(function() smoothTeleport(SELLER_POS); task.wait(0.8); buyByText("SUGAR BLOCK BAG") end) end)
+Button(AFP,"Buy Gelatin","TP to seller and buy",nil,function() task.spawn(function() smoothTeleport(SELLER_POS); task.wait(0.8); buyByText("GELATIN") end) end)
+
+Spacer(AFP)
+Section(AFP,"Actions")
+Button(AFP,"Sell Now","TP to seller and sell all marshmallows",nil,function() task.spawn(doSell) end)
+Button(AFP,"Teleport to Seller","Smooth TP to seller position",nil,function() smoothTeleport(SELLER_POS) end)
+Button(AFP,"Teleport to Apartment","Quick TP to apartment",nil,function() quickTeleport(Vector3.new(1009,10,216),"Apartment") end)
+
+-- Underground
+Spacer(AFP)
+Section(AFP,"Underground")
+local isUG=false; local ugPlatform=nil; local ugOrigCF=nil; local ugDist=7.4
+local function goUnderground()
+    local c=LP.Character; if not c then return end; local r=c:FindFirstChild("HumanoidRootPart"); if not r then return end
+    ugOrigCF=r.CFrame
+    local plat=Instance.new("Part"); plat.Name="1k_UG"; plat.Size=Vector3.new(10,1,10); plat.Transparency=1
+    plat.Anchored=true; plat.CanCollide=true; plat.CFrame=r.CFrame-Vector3.new(0,ugDist,0); plat.Parent=workspace
+    ugPlatform=plat; task.wait(0.1); r.CFrame=plat.CFrame+Vector3.new(0,3.5,0); isUG=true
+end
+Button(AFP,"Go Underground ⬇","Sink below the floor",nil,function() if not isUG then goUnderground() end end)
+
+Spacer(AFP)
+Section(AFP,"Reset Stats")
+Button(AFP,"🔄 Reset All Stats","Zero all farm stats and session timer",nil,function()
+    farmStats.batches=0; farmStats.small=0; farmStats.medium=0; farmStats.large=0
+    farmStats.failed=0; farmStats.batchLog={}; farmStats.lastBatch=""
+    farmStats.totalCookSecs=0; farmStats.cookCount=0; farmStats.sessionStart=tick()
+    farmStats.status="Stats reset"; notify("Stats","Reset","success")
+end)
+
+Spacer(AFP)
+Section(AFP,"Farm Controls")
+local startFarmBtn=Button(AFP,"▶ Start AutoMS","Cook only — equip and interact",nil)
+local loopBtn=Button(AFP,"🔄 Start Loop","Cook → Sell → Buy → repeat",nil)
+
+startFarmBtn.MouseButton1Click:Connect(function()
+    if farmEnabled and not S.Farm.Looping then
+        stopFarm(); startFarmBtn:FindFirstChildOfClass("TextLabel").Text="▶ Start AutoMS"
+        notify("AutoMS","Stopped",nil)
+    else
+        startFarm(); startFarmBtn:FindFirstChildOfClass("TextLabel").Text="⏹ Stop AutoMS"
+        loopBtn:FindFirstChildOfClass("TextLabel").Text="🔄 Start Loop"
+        notify("AutoMS","Started","success")
+    end
+end)
+loopBtn.MouseButton1Click:Connect(function()
+    if farmEnabled and S.Farm.Looping then
+        stopFarm(); loopBtn:FindFirstChildOfClass("TextLabel").Text="🔄 Start Loop"
+        notify("Loop","Stopped",nil)
+    else
+        startLoop(); loopBtn:FindFirstChildOfClass("TextLabel").Text="⏹ Stop Loop"
+        startFarmBtn:FindFirstChildOfClass("TextLabel").Text="▶ Start AutoMS"
+        notify("Loop","Started","success")
+    end
+end)
+
+-- ── SETTINGS PAGE ───────────────────────────────────────────
+local SP=makePage("Settings"); setupPageLayout(SP)
+Section(SP,"Keybinds")
+do
+    local function kName(kc) return tostring(kc):gsub("Enum.KeyCode.","") end
+    local tkRow=Instance.new("Frame",SP); tkRow.Size=UDim2.new(1,0,0,36); tkRow.BackgroundColor3=CARD; tkRow.BorderSizePixel=0
+    local pad=Instance.new("UIPadding",tkRow); pad.PaddingLeft=UDim.new(0,8); pad.PaddingRight=UDim.new(0,8)
+    local tLbl=Instance.new("TextLabel",tkRow); tLbl.Text="toggle menu"; tLbl.Font=Enum.Font.Code; tLbl.TextSize=11; tLbl.TextColor3=TXT
+    tLbl.BackgroundTransparency=1; tLbl.Size=UDim2.new(1,-90,0,14); tLbl.Position=UDim2.new(0,0,0,6); tLbl.TextXAlignment=Enum.TextXAlignment.Left
+    local tSub=Instance.new("TextLabel",tkRow); tSub.Text="click to rebind"; tSub.Font=Enum.Font.Code; tSub.TextSize=9; tSub.TextColor3=SUB
+    tSub.BackgroundTransparency=1; tSub.Size=UDim2.new(1,-90,0,12); tSub.Position=UDim2.new(0,0,0,20); tSub.TextXAlignment=Enum.TextXAlignment.Left
+    local tBadge=Instance.new("TextButton",tkRow); tBadge.Text=kName(S.GUI.ToggleKey)
+    tBadge.Font=Enum.Font.Code; tBadge.TextSize=10; tBadge.TextColor3=ACC; tBadge.BackgroundColor3=CARDON
+    tBadge.Size=UDim2.new(0,72,0,20); tBadge.Position=UDim2.new(1,-72,0.5,-10); tBadge.BorderSizePixel=1; tBadge.BorderColor3=BDRON; tBadge.AutoButtonColor=true
+    tBadge.MouseButton1Click:Connect(function()
+        if S.Listening then return end; S.Listening=true; tBadge.Text="..."; tBadge.TextColor3=YEL
+    end)
+    conn(UserInputService.InputBegan,function(inp)
+        if not S.Listening then return end
+        if inp.UserInputType~=Enum.UserInputType.Keyboard then return end
+        S.Listening=false; S.GUI.ToggleKey=inp.KeyCode; tBadge.Text=kName(inp.KeyCode); tBadge.TextColor3=ACC
+        notify("keybind","toggle → "..kName(inp.KeyCode),"success")
+    end)
+end
+Spacer(SP)
+Section(SP,"Danger Zone")
+Button(SP,"⏏ Unload 1k","Remove all hooks and destroy GUI",nil,function()
+    pcall(function()
+        S.Noclip.Enabled=false; S.Fly.Enabled=false; S.FreeCam.Enabled=false; S.AntiAim.Enabled=false
+        if S.AntiAim.Conn then S.AntiAim.Conn:Disconnect() end
+        if S.Fly.Body then S.Fly.Body:Destroy() end; if S.Fly.Gyro then S.Fly.Gyro:Destroy() end
+        if S.AFKBypass.Thread then task.cancel(S.AFKBypass.Thread) end
+        stopFarm(); stopSlowTravel()
+        Cam.CameraType=Enum.CameraType.Custom
+    end)
+    Main.Visible=false; pcall(function() SG:Destroy(); DrawSG:Destroy() end); _G.HUB_SG=nil
+end)
+Button(SP,"leave game","",nil,function() LP:Kick("you left.") end)
+
+-- ── INITIAL TAB ─────────────────────────────────────────────
+switchTab("Combat")
+
+-- ── ESP ─────────────────────────────────────────────────────
+local function removeESP(player)
+    if S.ESP.HPConns[player] then S.ESP.HPConns[player]:Disconnect(); S.ESP.HPConns[player]=nil end
+    if S.ESP.Tags[player] then S.ESP.Tags[player]:Destroy(); S.ESP.Tags[player]=nil end
+    if S.ESP.Highlights[player] then S.ESP.Highlights[player]:Destroy(); S.ESP.Highlights[player]=nil end
+end
+local function buildESP(player)
+    if player==LP then return end; removeESP(player)
+    local char=player.Character; if not char then return end
+    local head=char:FindFirstChild("Head"); local hum=char:FindFirstChildOfClass("Humanoid")
+    if not head or not hum then return end
+    local hl=Instance.new("Highlight"); hl.FillColor=ACC; hl.OutlineColor=ACC
+    hl.FillTransparency=0.72; hl.OutlineTransparency=0.1; hl.Adornee=char; hl.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop; hl.Parent=char; S.ESP.Highlights[player]=hl
+    local bb=Instance.new("BillboardGui"); bb.Name="1kESP"; bb.Size=UDim2.new(0,88,0,28)
+    bb.StudsOffset=Vector3.new(0,2.8,0); bb.AlwaysOnTop=true; bb.MaxDistance=500; bb.Adornee=head; bb.Parent=head; S.ESP.Tags[player]=bb
+    local nt=Instance.new("TextLabel",bb); nt.Text=player.Name; nt.Font=Enum.Font.GothamBold; nt.TextSize=10; nt.TextColor3=WHT; nt.BackgroundTransparency=1; nt.Size=UDim2.new(1,0,0,14); nt.TextXAlignment=Enum.TextXAlignment.Center; nt.TextStrokeTransparency=0.3
+    local hpBG=Instance.new("Frame",bb); hpBG.Size=UDim2.new(1,0,0,4); hpBG.Position=UDim2.new(0,0,0,15); hpBG.BackgroundColor3=Color3.fromRGB(20,5,5); hpBG.BorderSizePixel=0; Instance.new("UICorner",hpBG).CornerRadius=UDim.new(1,0)
+    local hpFill=Instance.new("Frame",hpBG); hpFill.Size=UDim2.new(1,0,1,0); hpFill.BackgroundColor3=GRN; hpFill.BorderSizePixel=0; Instance.new("UICorner",hpFill).CornerRadius=UDim.new(1,0)
+    local c2=RunService.Heartbeat:Connect(function()
+        if not bb.Parent or not hum.Parent then removeESP(player); return end
+        local pct=math.clamp(hum.Health/math.max(hum.MaxHealth,1),0,1)
+        hpFill.Size=UDim2.new(pct,0,1,0); hpFill.BackgroundColor3=pct>0.5 and GRN or ACC
+    end)
+    S.ESP.HPConns[player]=c2
+end
+for _,p in ipairs(Players:GetPlayers()) do
+    if p~=LP then p.CharacterAdded:Connect(function() task.wait(0.5); if S.ESP.Enabled then buildESP(p) end end) end
+end
+Players.PlayerAdded:Connect(function(p) p.CharacterAdded:Connect(function() task.wait(0.5); if S.ESP.Enabled then buildESP(p) end end) end)
+Players.PlayerRemoving:Connect(removeESP)
+
+-- ── AIMLOCK ─────────────────────────────────────────────────
+local function getAimTarget()
+    local center=Vector2.new(Cam.ViewportSize.X/2,Cam.ViewportSize.Y/2); local best,bestDist=nil,math.huge
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p==LP then continue end
+        local char=p.Character; if not char then continue end
+        local root=char:FindFirstChild("HumanoidRootPart"); local hum=char:FindFirstChildOfClass("Humanoid")
+        if not root or not hum or hum.Health<=0 then continue end
+        local sp,vis=Cam:WorldToScreenPoint(root.Position); if not vis then continue end
+        local d=(Vector2.new(sp.X,sp.Y)-center).Magnitude; if d>S.Aimlock.FOV then continue end
+        if d<bestDist then best,bestDist=p,d end
+    end
+    return best
+end
+
+-- ── RESPAWN ─────────────────────────────────────────────────
+local RLOCS={
+    Bank=Vector3.new(-44,6,-337), Barber=Vector3.new(64,6,-53), Gun=Vector3.new(216,6,-173),
+    Dealer=Vector3.new(731,7,432), BlackMarket=Vector3.new(663.2,6.9,260.6), Marshmellow=Vector3.new(510,3.7,604.1)
+}
+LP.CharacterAdded:Connect(function(char)
+    hideDeathScreen()
+    task.wait(0.3); local root=char:FindFirstChild("HumanoidRootPart"); local hum=char:FindFirstChildOfClass("Humanoid")
+    if hum then hum.WalkSpeed=S.Movement.Speed end
+    if root then
+        if S.DeathSpawn.QuickPos then
+            local qp=S.DeathSpawn.QuickPos; local qn=S.DeathSpawn.QuickName or "destination"
+            S.DeathSpawn.QuickPos=nil; S.DeathSpawn.QuickName=nil
+            smoothTeleport(qp); notify("Arrived","→ "..qn,"success")
+        elseif S.DeathSpawn.BankEnabled then smoothTeleport(RLOCS.Bank)
+        elseif S.DeathSpawn.BarberEnabled then smoothTeleport(RLOCS.Barber)
+        elseif S.DeathSpawn.GunEnabled then smoothTeleport(RLOCS.Gun)
+        elseif S.DeathSpawn.DealerEnabled then smoothTeleport(RLOCS.Dealer)
+        elseif S.DeathSpawn.BlackMarketEnabled then smoothTeleport(RLOCS.BlackMarket)
+        elseif S.DeathSpawn.MarshmellowEnabled then smoothTeleport(RLOCS.Marshmellow)
+        elseif S.DeathSpawn.Enabled and S.DeathSpawn.LastPos then smoothTeleport((S.DeathSpawn.LastPos*CFrame.new(0,3,0)).Position) end
+    end
+    if hum then
+        hum.Died:Connect(function()
+            if S.DeathSpawn.Enabled then local r=char:FindFirstChild("HumanoidRootPart"); if r then S.DeathSpawn.LastPos=r.CFrame end end
+            if S.AutoRespawn.Enabled then task.wait(0.05); pcall(function() LP:LoadCharacter() end) end
+        end)
+    end
+end)
+
+-- ── NEAR ALERT ──────────────────────────────────────────────
+local nearT=0
+RunService.Heartbeat:Connect(function(dt)
+    if not S.NearAlert.Enabled then return end
+    nearT+=dt; if nearT<1 then return end; nearT=0
+    local char=LP.Character; local root=char and char:FindFirstChild("HumanoidRootPart"); if not root then return end
+    local now=tick(); if now-S.NearAlert.LastAlert<5 then return end
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p==LP then continue end
+        local tc=p.Character; local tr=tc and tc:FindFirstChild("HumanoidRootPart")
+        if tr and (root.Position-tr.Position).Magnitude<=S.NearAlert.Radius then
+            S.NearAlert.LastAlert=now; notify("⚠ Player Nearby",p.DisplayName.." is close!",nil); break
+        end
+    end
+end)
+
+-- ── INFINITE STAMINA ────────────────────────────────────────
+RunService.Heartbeat:Connect(function()
+    if not S.InfiniteStamina.Enabled then return end
+    pcall(function()
+        local char=LP.Character; if not char then return end
+        for _,v in ipairs(char:GetDescendants()) do
+            if v:IsA("NumberValue") and (v.Name:lower():find("stamina") or v.Name:lower():find("energy")) then
+                v.Value=v.Value+1
+            end
+        end
+    end)
+end)
+
+-- ── INSTANT INTERACT ────────────────────────────────────────
+workspace.DescendantAdded:Connect(function(v)
+    if S.InstantInteract.Enabled and v:IsA("ProximityPrompt") then pcall(function() v.HoldDuration=0 end) end
+end)
+
+-- ── MAIN RENDER LOOP ────────────────────────────────────────
+local fcCF=CFrame.new(0,10,0); local fcYaw=0; local fcPitch=0
+RunService.RenderStepped:Connect(function(dt)
+    -- Drag
+    if S.GUI.Dragging then
+        local mp=UserInputService:GetMouseLocation()
+        Main.Position=UDim2.new(0,mp.X-S.GUI.DragOff.X,0,mp.Y-S.GUI.DragOff.Y)
+    end
+
+    -- Slider
+    if S.ActiveSlider then
+        local sl=S.ActiveSlider; local ix=UserInputService:GetMouseLocation().X
+        local rel=math.clamp((ix-sl.track.AbsolutePosition.X)/sl.track.AbsoluteSize.X,0,1)
+        local v=sl.min+rel*(sl.max-sl.min)
+        sl.fill.Size=UDim2.new(rel,0,1,0); sl.dot.Position=UDim2.new(rel,0,0.5,0); sl.setV(v); if sl.cb then sl.cb(v) end
+    end
+
+    -- Aimlock
+    if S.Aimlock.Enabled and UserInputService:IsKeyDown(Enum.KeyCode.Q) then
+        local target=getAimTarget()
+        if target then local char=target.Character; if char then local root=char:FindFirstChild("HumanoidRootPart"); local hum=char:FindFirstChildOfClass("Humanoid"); if root and hum and hum.Health>0 then Cam.CFrame=Cam.CFrame:Lerp(CFrame.new(Cam.CFrame.Position,root.Position+Vector3.new(0,1.5,0)),S.Aimlock.Smooth) end end end
+    end
+
+    -- ESP
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p==LP then continue end
+        if S.ESP.Enabled then if not S.ESP.Tags[p] and p.Character then buildESP(p) end
+        else if S.ESP.Tags[p] or S.ESP.Highlights[p] then removeESP(p) end end
+    end
+
+    -- Noclip
+    if S.Noclip.Enabled then
+        local char=LP.Character; if char then
+            for _,p in ipairs(char:GetDescendants()) do
+                if p:IsA("BasePart") and p.Name~="LeftFoot" and p.Name~="RightFoot" then p.CanCollide=false end
+            end
+        end
+    end
+
+    -- Fly
+    if S.Fly.Enabled and S.Fly.Body and S.Fly.Gyro then
+        local cf=Cam.CFrame; local vel=Vector3.zero; local spd=S.Fly.Speed
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then vel+=cf.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then vel-=cf.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then vel-=cf.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then vel+=cf.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then vel+=Vector3.yAxis end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then vel-=Vector3.yAxis end
+        S.Fly.Body.Velocity=vel.Magnitude>0 and vel.Unit*spd or Vector3.zero; S.Fly.Gyro.CFrame=cf
+    end
+
+    -- Freecam
+    if S.FreeCam.Enabled then
+        local spd=S.FreeCam.Speed*dt; local vel=Vector3.zero
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then vel+=fcCF.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then vel-=fcCF.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then vel-=fcCF.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then vel+=fcCF.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.E) then vel+=Vector3.yAxis end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Q) then vel-=Vector3.yAxis end
+        local md=UserInputService:GetMouseDelta(); fcYaw-=md.X*0.3; fcPitch=math.clamp(fcPitch-md.Y*0.3,-89,89)
+        local rot=CFrame.Angles(0,math.rad(fcYaw),0)*CFrame.Angles(math.rad(fcPitch),0,0)
+        if vel.Magnitude>0 then fcCF=CFrame.new(fcCF.Position+vel.Unit*spd)*rot else fcCF=CFrame.new(fcCF.Position)*rot end
+        Cam.CFrame=fcCF
+    end
+end)
+
+-- ── INPUT ───────────────────────────────────────────────────
+conn(UserInputService.InputBegan,function(inp,gpe)
+    if gpe or S.Listening then return end
+    if inp.KeyCode==S.GUI.ToggleKey then
+        S.GUI.Visible=not S.GUI.Visible; Main.Visible=S.GUI.Visible
+    end
+    if inp.KeyCode==Enum.KeyCode.V then
+        S.Noclip.Enabled=not S.Noclip.Enabled
+        if not S.Noclip.Enabled then
+            local c=LP.Character; if c then
+                for _,p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=true end end
+                local hum=c:FindFirstChildOfClass("Humanoid"); if hum then pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end) end
+            end
+        end
+    end
+    if inp.KeyCode==Enum.KeyCode.F then
+        S.Fly.Enabled=not S.Fly.Enabled
+        local char=LP.Character; if not char then return end
+        local root=char:FindFirstChild("HumanoidRootPart"); local hum=char:FindFirstChildOfClass("Humanoid")
+        if not root or not hum then return end
+        if S.Fly.Enabled then
+            hum.PlatformStand=true
+            local bv=Instance.new("BodyVelocity",root); bv.Name="1kFlyVel"; bv.Velocity=Vector3.zero; bv.MaxForce=Vector3.new(1e5,1e5,1e5)
+            local bg=Instance.new("BodyGyro",root); bg.Name="1kFlyGyro"; bg.MaxTorque=Vector3.new(1e5,1e5,1e5); bg.P=1e4; bg.CFrame=root.CFrame
+            S.Fly.Body=bv; S.Fly.Gyro=bg
+        else
+            hum.PlatformStand=false
+            if S.Fly.Body then S.Fly.Body:Destroy(); S.Fly.Body=nil end
+            if S.Fly.Gyro then S.Fly.Gyro:Destroy(); S.Fly.Gyro=nil end
+        end
+    end
+    if inp.KeyCode==Enum.KeyCode.C then
+        S.FreeCam.Enabled=not S.FreeCam.Enabled
+        if S.FreeCam.Enabled then
+            fcCF=Cam.CFrame; local _,yaw,_=Cam.CFrame:ToEulerAnglesYXZ(); fcYaw=math.deg(yaw); fcPitch=0
+            Cam.CameraType=Enum.CameraType.Scriptable; UserInputService.MouseBehavior=Enum.MouseBehavior.LockCenter
+        else
+            Cam.CameraType=Enum.CameraType.Custom; Cam.CameraSubject=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") or nil
+            UserInputService.MouseBehavior=Enum.MouseBehavior.Default
+        end
+    end
+end)
+
+conn(UserInputService.InputEnded,function(inp)
+    if inp.UserInputType==Enum.UserInputType.MouseButton1 then S.ActiveSlider=nil end
+end)
+
+-- ── FLOATING BUTTON ─────────────────────────────────────────
+local MenuBtn=Instance.new("TextButton",SG); MenuBtn.Name="HubMenuBtn"
+MenuBtn.Size=UDim2.new(0,36,0,36); MenuBtn.Position=UDim2.new(0,10,0,10)
+MenuBtn.BackgroundColor3=SURF; MenuBtn.BorderSizePixel=1
+MenuBtn.BorderColor3=BORDER; MenuBtn.AutoButtonColor=false; MenuBtn.ZIndex=50; MenuBtn.Text="1k"
+MenuBtn.Font=Enum.Font.Code; MenuBtn.TextSize=11; MenuBtn.TextColor3=ACC
+
+local mbDrag=false; local mbDragOff=Vector2.new(); local mbClickPos=Vector2.new(); local mbClickTime=0
+MenuBtn.InputBegan:Connect(function(inp)
+    if inp.UserInputType==Enum.UserInputType.MouseButton1 then
+        mbDrag=true; mbClickPos=UserInputService:GetMouseLocation(); mbClickTime=tick()
+        mbDragOff=Vector2.new(inp.Position.X-MenuBtn.AbsolutePosition.X,inp.Position.Y-MenuBtn.AbsolutePosition.Y)
+    end
+end)
+MenuBtn.InputEnded:Connect(function(inp)
+    if inp.UserInputType==Enum.UserInputType.MouseButton1 then
+        mbDrag=false
+        local cur=UserInputService:GetMouseLocation()
+        if (cur-mbClickPos).Magnitude<6 and tick()-mbClickTime<0.3 then
+            S.GUI.Visible=not S.GUI.Visible; Main.Visible=S.GUI.Visible
+        end
+    end
+end)
+RunService.RenderStepped:Connect(function()
+    if mbDrag then
+        local mp=UserInputService:GetMouseLocation(); local vp=Cam.ViewportSize
+        MenuBtn.Position=UDim2.new(0,math.clamp(mp.X-mbDragOff.X,0,vp.X-36),0,math.clamp(mp.Y-mbDragOff.Y,0,vp.Y-36))
+    end
+    MenuBtn.TextColor3=S.GUI.Visible and ACC or SUB
+    MenuBtn.BorderColor3=S.GUI.Visible and ACC or BORDER
+end)
+
+task.wait(0.5)
+notify("1k hub","1k hub loaded","success")
+print("[1k] Loaded — RightShift to toggle")
